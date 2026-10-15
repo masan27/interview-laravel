@@ -1,0 +1,17 @@
+{
+    "name": "arsippp-interview-test-app",
+    "private": true,
+    "version": "1.0.0",
+    "description": "Mini App Fullstack Live Coding Technical Assessment - Developer ARSIPPP (Level Low - Mid)",
+    "scripts": {
+        "build": "node_modules/esbuild/bin/esbuild resources/js/app.jsx --bundle --outfile=public/js/app.bundle.js --format=iife --loader:.jsx=jsx",
+        "watch": "node_modules/esbuild/bin/esbuild resources/js/app.jsx --bundle --outfile=public/js/app.bundle.js --format=iife --loader:.jsx=jsx --watch"
+    },
+    "dependencies": {
+        "react": "^19.0.0",
+        "react-dom": "^19.0.0"
+    },
+    "devDependencies": {
+        "esbuild": "^0.20.2"
+    }
+}
