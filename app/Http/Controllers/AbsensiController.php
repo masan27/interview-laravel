@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Absensi;
 use App\Models\PesertaLembur;
 use Illuminate\Http\Request;
+use App\Models\User;
 
 class AbsensiController extends Controller
 {
@@ -22,10 +23,11 @@ class AbsensiController extends Controller
      * 2. Apakah ada yang salah jika ada user yang mengakses ID milik divisi lain?
      * 3. Bagaimana cara memperbaikinya?
      */
-    public function soal_1($id)
-    {
-        $absensi = Absensi::findOrFail($id);
 
+    //ambil berdasarkan divisi_id user
+    public function soal_1()
+    {
+        $absensi = Absensi::with('divisi_id')->where('divisi_id', auth()->user()->divisi_id)-> get();
         return response()->json($absensi);
     }
 
@@ -44,10 +46,17 @@ class AbsensiController extends Controller
      * 1. Apa yang Anda pahami dari alur kode di bawah?
      * 2. Apakah ada yang salah dengan kode tersebut?
      * 3. Bagaimana cara memperbaikinya?
+     *   
      */
+    //menambahkan validate agar sesuai, bikin req yg sesuai
     public function soal_2(Request $request)
     {
-        $absensi = Absensi::create($request->all());
+        $validatedData = $request->validate([
+            'tanggal' => 'required|date',
+            'keterangan' => 'required|string|max:255',
+        ]);
+
+        $absensi = Absensi::create($validatedData);
 
         return response()->json([
             'message' => 'Pengajuan izin berhasil disimpan',
@@ -69,9 +78,11 @@ class AbsensiController extends Controller
      * 2. Apakah ada yang salah dengan kode tersebut?
      * 3. Bagaimana cara memperbaikinya?
      */
+
+    //kasih pagination
     public function soal_3()
     {
-        $absensis = Absensi::where('status', 'hadir')->get();
+        $absensis = Absensi::where('status', 'hadir')->get()->paginate(10);
 
         $result = [];
         foreach ($absensis as $item) {
@@ -105,7 +116,8 @@ class AbsensiController extends Controller
     {
         $absensis = Absensi::where('divisi_id', $request->user()->divisi_id)
             ->orderBy('tanggal', 'desc')
-            ->get();
+            ->get()
+            ->paginate(10, ['id', 'tanggal', 'jam_masuk', 'keterangan']);
 
         return response()->json($absensis);
     }
@@ -127,8 +139,7 @@ class AbsensiController extends Controller
      */
     public function soal_5($id)
     {
-        $profilPegawai = [];
-
+        $profilPegawai = User::findOrFail($id);
         return response()->json($profilPegawai);
     }
 
@@ -156,13 +167,14 @@ class AbsensiController extends Controller
             'divisi_id' => auth()->user()->divisi_id,
         ]);
 
-        foreach ($request->input('peserta_ids', []) as $userId) {
-            PesertaLembur::create([
-                'absensi_id' => $absensi->id,
-                'user_id' => $userId,
-            ]);
+        if($absensi->hasFile('absensi_id')) {
+            foreach ($request->input('peserta_ids', []) as $userId) {
+                PesertaLembur::create([
+                    'absensi_id' => $absensi->id,
+                    'user_id' => $userId,
+                ]);
+            }
         }
-
         return response()->json([
             'message' => 'Jadwal lembur tim berhasil dibuat',
             'data' => $absensi,
@@ -188,7 +200,9 @@ class AbsensiController extends Controller
      */
     public function soal_7(Request $request)
     {
-        $file = $request->file('lampiran');
+        $file = $request->file('lampiran')->validate([
+            'lampiran' => 'required|file|mimes:pdf,doc,docx|max:2048',
+        ]);
         $path = $file ? $file->store('lampiran-izin') : null;
 
         return response()->json([
