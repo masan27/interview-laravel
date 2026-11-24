@@ -24,9 +24,13 @@ class AbsensiController extends Controller
      */
     public function soal_1($id)
     {
-        $absensi = Absensi::findOrFail($id);
-
-        return response()->json($absensi);
+        // Asumsi $id = id divisi
+        if (auth()->user()->divisi_id === $id) {
+            $absensi = Absensi::where('divisi_id', $id)->get();
+            return response()->json($absensi);
+        } else {
+            return error_log('Anda tidak memiliki akses untuk melihat data absensi ini');
+        }
     }
 
     /**
@@ -47,7 +51,12 @@ class AbsensiController extends Controller
      */
     public function soal_2(Request $request)
     {
-        $absensi = Absensi::create($request->all());
+        $data = $request->validate([
+            'tanggal' => 'required',
+            'keterangan' => 'required',
+        ]);
+
+        $absensi = Absensi::create($data);
 
         return response()->json([
             'message' => 'Pengajuan izin berhasil disimpan',
@@ -71,19 +80,9 @@ class AbsensiController extends Controller
      */
     public function soal_3()
     {
-        $absensis = Absensi::where('status', 'hadir')->get();
+        $absensis = Absensi::select('id', 'tanggal', 'jam_masuk', 'nama_pegawai')->where('status', 'hadir')->get();
 
-        $result = [];
-        foreach ($absensis as $item) {
-            $result[] = [
-                'id' => $item->id,
-                'tanggal' => $item->tanggal,
-                'jam_masuk' => $item->jam_masuk,
-                'nama_pegawai' => $item->pegawai->nama ?? '-',
-            ];
-        }
-
-        return response()->json($result);
+        return response()->json($absensis);
     }
 
     /**
@@ -105,7 +104,7 @@ class AbsensiController extends Controller
     {
         $absensis = Absensi::where('divisi_id', $request->user()->divisi_id)
             ->orderBy('tanggal', 'desc')
-            ->get();
+            ->paginate(15);
 
         return response()->json($absensis);
     }
@@ -127,7 +126,7 @@ class AbsensiController extends Controller
      */
     public function soal_5($id)
     {
-        $profilPegawai = [];
+        $profilPegawai = HrServiceController::getPegawai($id);
 
         return response()->json($profilPegawai);
     }
@@ -150,23 +149,25 @@ class AbsensiController extends Controller
      */
     public function soal_6(Request $request)
     {
-        $absensi = Absensi::create([
-            'tanggal' => $request->tanggal,
-            'keterangan' => $request->keterangan,
-            'divisi_id' => auth()->user()->divisi_id,
-        ]);
-
-        foreach ($request->input('peserta_ids', []) as $userId) {
-            PesertaLembur::create([
-                'absensi_id' => $absensi->id,
-                'user_id' => $userId,
+        DB::transaction(function () {
+            $absensi = Absensi::create([
+                'tanggal' => $request->tanggal,
+                'keterangan' => $request->keterangan,
+                'divisi_id' => auth()->user()->divisi_id,
             ]);
-        }
 
-        return response()->json([
-            'message' => 'Jadwal lembur tim berhasil dibuat',
-            'data' => $absensi,
-        ], 201);
+            foreach ($request->input('peserta_ids', []) as $userId) {
+                PesertaLembur::create([
+                    'absensi_id' => $absensi->id,
+                    'user_id' => $userId,
+                ]);
+            }
+
+            return response()->json([
+                'message' => 'Jadwal lembur tim berhasil dibuat',
+                'data' => $absensi,
+            ], 201);
+        });
     }
 
     /**
@@ -188,6 +189,10 @@ class AbsensiController extends Controller
      */
     public function soal_7(Request $request)
     {
+        $data = $request->validate([
+            'lampiran' => 'required|file|mimes:pdf,doc,docx|max:2048',
+        ]);
+
         $file = $request->file('lampiran');
         $path = $file ? $file->store('lampiran-izin') : null;
 

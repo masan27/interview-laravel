@@ -23,7 +23,11 @@ export function DaftarShift() {
     const [namaBaru, setNamaBaru] = useState('');
 
     const handleTambah = () => {
-        // Lengkapi logika penambahan pegawai shift di sini:
+        if (namaBaru.trim() == '' || namaBaru == null) {
+            return;
+        }
+        setPegawaiList([...pegawaiList, namaBaru]);
+        setNamaBaru('');
 
     };
 

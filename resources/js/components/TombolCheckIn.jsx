@@ -20,10 +20,12 @@ export function TombolCheckIn({ pegawaiId = 1, onCheckIn }) {
     const [lastMessage, setLastMessage] = useState('');
 
     const handleCheckIn = async () => {
+        loading = true;
         const res = await onCheckIn(pegawaiId);
         if (res && res.message) {
             setLastMessage(`${res.message} (Total tercatat di server: ${res.total_checkin_count}x)`);
         }
+        loading = false;
     };
 
     return (
@@ -38,6 +40,7 @@ export function TombolCheckIn({ pegawaiId = 1, onCheckIn }) {
                 <button
                     type="button"
                     onClick={handleCheckIn}
+                    disabled={loading}
                     className="btn-success"
                 >
                     Check-In Masuk
