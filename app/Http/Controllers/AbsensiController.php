@@ -60,7 +60,7 @@ class AbsensiController extends Controller
      * [SOAL 3] Rekap Kehadiran Harian Pegawai
      * =========================================================================
      * Deskripsi Kasus:
-     * Kode berikut digunakan untuk mengambil daftar absensi berstatus 'hadir'
+     * Kode berikut digunakan untuk mengambil daftar absensi sebanyak 4 jutaan data berstatus 'hadir'
      * beserta nama pegawainya. Ketika dijalankan dengan jumlah data absensi
      * yang banyak, fungsi ini menyebabkan performa database menjadi sangat lambat.
      *
